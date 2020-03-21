@@ -118,10 +118,11 @@ class Figure(object):
                       bar: list,
                       offset: float,
                       fontsize: int,
-                      alpha: float) -> None:
+                      alpha: float,
+                      format: str) -> None:
         for b in bar:
             height = b.get_height()
-            self.ax.annotate(str(height),
+            self.ax.annotate(f"{height:.{format}}",
                              xy=(b.get_x() + b.get_width() / 2, height + offset),
                              ha='center',
                              fontsize=fontsize,
@@ -136,7 +137,9 @@ class Figure(object):
             add_annotate: bool = False,
             annotate_offset: float = 0.01,
             annotate_fontsize: Optional[int] = None,
-            annotate_alpha: Optional[float] = None) -> Figure:
+            annotate_alpha: Optional[float] = None,
+            annotate_format: str = '2f',
+            err_alpha: Optional[float] = None) -> Figure:
         """ Vertical bars
 
         """
@@ -166,9 +169,10 @@ class Figure(object):
                 d = d.mean(axis=0)
             bar = self.ax.bar(indices + i * width, d, align='edge', yerr=std,
                               width=width, alpha=alpha, color=colors[i],
-                              label=labels[i])
+                              label=labels[i],
+                              error_kw=dict(alpha=err_alpha))
             if add_annotate:
-                self._annotate_bar(bar, annotate_offset, annotate_fontsize, annotate_alpha)
+                self._annotate_bar(bar, annotate_offset, annotate_fontsize, annotate_alpha, annotate_format)
 
         # do not show ticks on xaxis
         self.set_ticks(x_tick_params=dict(length=0, **self._default_tick_params))
@@ -236,20 +240,28 @@ class Figure(object):
         return self
 
     def set_ticks(self,
-                  xticks: Optional[List[float, str]] = None,
-                  yticks: Optional[List[float, str]] = None,
+                  xticks: Optional[List[float]] = None,
+                  yticks: Optional[List[float]] = None,
+                  xtick_labels: Optional[List[str]] = None,
+                  ytick_labels: Optional[List[str]] = None,
                   fontsize: Optional[int] = None,
                   x_tick_params: Optional[dict] = None,
                   y_tick_params: Optional[dict] = None) -> Figure:
         if xticks is not None:
             if isinstance(xticks[0], Number):
                 self.ax.set_xticks(xticks)
-            self.ax.set_xticklabels(xticks, fontdict=dict(fontsize=fontsize))
+                if xtick_labels is None:
+                    xtick_labels = xticks
+        if xtick_labels is not None:
+            self.ax.set_xticklabels(xtick_labels, fontdict=dict(fontsize=fontsize))
 
         if yticks is not None:
             if isinstance(yticks[0], Number):
                 self.ax.set_yticks(yticks)
-            self.ax.set_yticklabels(yticks, fontdict=dict(fontsize=fontsize))
+                if ytick_labels is None:
+                    ytick_labels = yticks
+        if ytick_labels is not None:
+            self.ax.set_yticklabels(ytick_labels, fontdict=dict(fontsize=fontsize))
 
         if (x_tick_params is not None) and (y_tick_params is not None) and (x_tick_params == y_tick_params):
             self.ax.tick_params('both', **x_tick_params)
