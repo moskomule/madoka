@@ -8,7 +8,8 @@ def test_next(boxes):
     # check if warns or not
     with pytest.warns(None) as warn_list:
         fig = Figure((5, 5), boxes=boxes)
-        for i in range(5):
+        # fig here is already the first box
+        for i in range(4):
             fig.next()
 
     assert len(warn_list) == 1
