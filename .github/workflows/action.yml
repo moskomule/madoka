@@ -1,0 +1,29 @@
+name: pytest
+
+on: [push, pull_request]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python: ['3.7', '3.8']
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: install dependencies
+        run: |
+          python -m venv venv
+          . venv/bin/activate
+          pip install -U .
+
+      - name: run test
+        run: |
+          . venv/bin/activate
+          pytest
