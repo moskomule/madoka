@@ -9,8 +9,7 @@ def test_next(boxes):
     with pytest.warns(None) as warn_list:
         fig = Figure((5, 5), boxes=boxes)
         for i in range(5):
-            if i == 4:
-                pass
+            fig.next()
 
     assert len(warn_list) == 1
 
