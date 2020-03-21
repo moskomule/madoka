@@ -22,7 +22,8 @@ def test_plot():
     fig.plot([1, 2])
 
     # expect fill plot
-    fig.plot([[1, 2], [2, 3], [0, 1]])
+    fig.plot([[1.0, 2.0, 3.0],
+              [1.1, 2.4, 3.6]])
 
     with pytest.raises(AssertionError):
         fig.plot([1, 2, 3], [1, 2])
@@ -32,8 +33,8 @@ def test_bar():
     fig = Figure((5, 5), boxes=(1, 2))
     fig.bar([5, 10, 15])
     fig.next()
-    fig.bar([[5, 10, 15],
-             [1, 2, 4]])
+    fig.bar([5, 10, 15],
+            [1, 2, 4])
 
 
 def test_scatter():

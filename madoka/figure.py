@@ -13,7 +13,7 @@ _DataType = Union[np.ndarray, List, Number]
 _StrSeq = List[str]
 
 
-def _to_numpy(data: Optional[_DataType]):
+def _to_numpy(data: Optional[_DataType]) -> Optional[np.ndarray]:
     if data is None:
         return data
 
@@ -143,7 +143,7 @@ class Figure(object):
 
         _data = [_to_numpy(d) for d in _data]
         num_types = len(_data)
-        indices = np.arange(len(_data[0]))
+        indices = np.arange(_to_numpy(_data[0]).shape[-1])
         width = 1 / (1 + num_types) if width is None else width
 
         if num_types > 1:
@@ -164,7 +164,7 @@ class Figure(object):
             if d.ndim == 2:
                 std = d.std(axis=0)
                 d = d.mean(axis=0)
-            bar = self.ax.bar(indices + i * width, d, align='edge', xerr=std,
+            bar = self.ax.bar(indices + i * width, d, align='edge', yerr=std,
                               width=width, alpha=alpha, color=colors[i],
                               label=labels[i])
             if add_annotate:
@@ -184,8 +184,8 @@ class Figure(object):
              linewidth: Optional[float] = None,
              **kwargs) -> Figure:
         if len(_data) == 1:
-            x = np.arange(len(_data[0]))
             y = _to_numpy(_data[0])
+            x = np.arange(y.shape[-1])
         elif len(_data) == 2:
             x, y = _data
             x, y = _to_numpy(x), _to_numpy(y)
