@@ -2,9 +2,7 @@
 
 ![](https://github.com/moskomule/madoka/workflows/pytest/badge.svg)
 
-`madoka` is a N(>>1)th wrapper of `matplotlib`.
-
-`madoka` aims to simplify creating figures in papers. Why not seaborn? Because I cannot remember the APIs of pandas.
+`madoka` is an N(>>1)th wheel of `matplotlib` wrapper.
 
 ## Installation
 

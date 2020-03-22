@@ -10,7 +10,6 @@ import numpy as np
 __all__ = ['Figure']
 
 _DataType = Union[np.ndarray, List, Number]
-_StrSeq = List[str]
 
 
 def _to_numpy(data: Optional[_DataType]) -> Optional[np.ndarray]:
@@ -55,6 +54,7 @@ class Figure(object):
         self._boxes = (1, 1) if boxes is None else boxes
         self._num_boxes = np.prod(self._boxes)
         self._ax: Optional[plt.Axes] = None
+
         # initialize
         self.next()
 
@@ -133,6 +133,7 @@ class Figure(object):
             width: Optional[float] = None,
             colors: Optional[List[str]] = None,
             labels: Optional[List[str]] = None,
+            tick_labels: Optional[List[str]] = None,
             alpha: Optional[float] = None,
             add_annotate: bool = False,
             annotate_offset: float = 0.01,
@@ -176,6 +177,13 @@ class Figure(object):
 
         # do not show ticks on xaxis
         self.set_ticks(x_tick_params=dict(length=0, **self._default_tick_params))
+        if tick_labels is None:
+            tick_labels = [str(i) for i in indices]
+        else:
+            assert len(tick_labels) == len(indices)
+
+        tick_position = (num_types - 1) / (2 * num_types)
+        self.set_ticks(xticks=(indices + tick_position), xtick_labels=tick_labels)
         return self
 
     def plot(self,
@@ -211,7 +219,7 @@ class Figure(object):
                 x: _DataType,
                 y: _DataType,
                 size: Optional[_DataType] = None,
-                color: Optional[_StrSeq] = None,
+                color: Optional[List[str]] = None,
                 alpha: Optional[float] = None,
                 label: Optional[str] = None,
                 **kwargs) -> Figure:
@@ -240,8 +248,8 @@ class Figure(object):
         return self
 
     def set_ticks(self,
-                  xticks: Optional[List[float]] = None,
-                  yticks: Optional[List[float]] = None,
+                  xticks: Optional[_DataType] = None,
+                  yticks: Optional[_DataType] = None,
                   xtick_labels: Optional[List[str]] = None,
                   ytick_labels: Optional[List[str]] = None,
                   fontsize: Optional[int] = None,
