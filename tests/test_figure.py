@@ -35,6 +35,8 @@ def test_bar():
     fig.next()
     fig.bar([5, 10, 15],
             [1, 2, 4])
+    fig.barh([5, 10, 15],
+             [1, 2, 4])
 
 
 def test_scatter():

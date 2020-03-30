@@ -114,41 +114,14 @@ class Figure(object):
             self._ax.tick_params('both', **self._default_tick_params)
         return self
 
-    def _annotate_bar(self,
-                      bar: list,
-                      offset: float,
-                      fontsize: int,
-                      alpha: float,
-                      format: str) -> None:
-        for b in bar:
-            height = b.get_height()
-            self.ax.annotate(f"{height:.{format}}",
-                             xy=(b.get_x() + b.get_width() / 2, height + offset),
-                             ha='center',
-                             fontsize=fontsize,
-                             alpha=alpha)
-
-    def bar(self,
-            *_data,
-            width: Optional[float] = None,
-            colors: Optional[List[str]] = None,
-            labels: Optional[List[str]] = None,
-            tick_labels: Optional[List[str]] = None,
-            alpha: Optional[float] = None,
-            add_annotate: bool = False,
-            annotate_offset: float = 0.01,
-            annotate_fontsize: Optional[int] = None,
-            annotate_alpha: Optional[float] = None,
-            annotate_format: str = '2f',
-            err_alpha: Optional[float] = None) -> Figure:
-        """ Vertical bars
-
-        """
-
+    def _bar(self,
+             _data,
+             labels,
+             colors):
+        # for self.bar and self.barh
         _data = [_to_numpy(d) for d in _data]
         num_types = len(_data)
         indices = np.arange(_to_numpy(_data[0]).shape[-1])
-        width = 1 / (1 + num_types) if width is None else width
 
         if num_types > 1:
             assert all([_data[0].shape == d.shape for d in _data])
@@ -162,7 +135,62 @@ class Figure(object):
             labels = [None for _ in range(num_types)]
         else:
             assert len(labels) == num_types
+        return _data, indices, labels, colors, num_types
 
+    def _annotate_bar(self,
+                      bar: list,
+                      offset: float,
+                      fontsize: int,
+                      alpha: float,
+                      format: str,
+                      horizontal: bool) -> None:
+        # annotate self.bar and self.barh
+        shared_kwargs = dict(weight='bold',
+                             fontsize=fontsize,
+                             alpha=alpha)
+        for b in bar:
+            height = b.get_height()
+            width = b.get_width()
+            if horizontal:
+                w = self.ax.get_xlim()[1]
+                _c = (w - width) / w < 0.1
+                _offset = -offset if _c else offset
+                _align = 'right' if _c else 'left'
+                self.ax.annotate(f"{width:.{format}}",
+                                 xy=(width + _offset, b.get_y() + height / 2),
+                                 va='center',
+                                 ha=_align,
+                                 **shared_kwargs)
+            else:
+                h = self.ax.get_ylim()[1]
+                _c = (h - height) / h < 0.1
+                _offset = -offset if _c else offset
+                _align = 'top' if _c else 'bottom'
+                self.ax.annotate(f"{height:.{format}}",
+                                 xy=(b.get_x() + width / 2, height + _offset),
+                                 va=_align,
+                                 ha='center',
+                                 **shared_kwargs)
+
+    def bar(self,
+            *_data,
+            width: Optional[float] = None,
+            colors: Optional[List[str]] = None,
+            labels: Optional[List[str]] = None,
+            tick_labels: Optional[List[str]] = None,
+            alpha: Optional[float] = None,
+            add_annotate: bool = False,
+            annotate_offset: float = 0.1,
+            annotate_fontsize: Optional[int] = None,
+            annotate_alpha: Optional[float] = None,
+            annotate_format: str = '2f',
+            err_alpha: Optional[float] = None) -> Figure:
+        """ Vertical bars
+        """
+
+        _data, indices, labels, colors, num_types = self._bar(_data, labels, colors)
+        width = 1 / (1 + num_types) if width is None else width
+        bars = []
         for i, d in enumerate(_data):
             std = None
             if d.ndim == 2:
@@ -172,8 +200,11 @@ class Figure(object):
                               width=width, alpha=alpha, color=colors[i],
                               label=labels[i],
                               error_kw=dict(alpha=err_alpha))
-            if add_annotate:
-                self._annotate_bar(bar, annotate_offset, annotate_fontsize, annotate_alpha, annotate_format)
+            bars.append(bar)
+        if add_annotate:
+            for bar in bars:
+                self._annotate_bar(bar, annotate_offset, annotate_fontsize, annotate_alpha, annotate_format,
+                                   horizontal=False)
 
         # do not show ticks on xaxis
         self.set_ticks(x_tick_params=dict(length=0, **self._default_tick_params))
@@ -184,6 +215,52 @@ class Figure(object):
 
         tick_position = (num_types - 1) / (2 * num_types)
         self.set_ticks(xticks=(indices + tick_position), xtick_labels=tick_labels)
+        return self
+
+    def barh(self,
+             *_data,
+             height: Optional[float] = None,
+             colors: Optional[List[str]] = None,
+             labels: Optional[List[str]] = None,
+             tick_labels: Optional[List[str]] = None,
+             alpha: Optional[float] = None,
+             add_annotate: bool = False,
+             annotate_offset: float = 0.1,
+             annotate_fontsize: Optional[int] = None,
+             annotate_alpha: Optional[float] = None,
+             annotate_format: str = '2f',
+             err_alpha: Optional[float] = None) -> Figure:
+        """ Horizontal bars
+
+        """
+
+        _data, indices, labels, colors, num_types = self._bar(_data, labels, colors)
+        height = 1 / (1 + num_types) if height is None else height
+        bars = []
+        for i, d in enumerate(_data):
+            std = None
+            if d.ndim == 2:
+                std = d.std(axis=0)
+                d = d.mean(axis=0)
+            bar = self.ax.barh(indices + i * height, d, align='edge', xerr=std,
+                               height=height, alpha=alpha, color=colors[i],
+                               label=labels[i],
+                               error_kw=dict(alpha=err_alpha))
+            bars.append(bar)
+        if add_annotate:
+            for bar in bars:
+                self._annotate_bar(bar, annotate_offset, annotate_fontsize, annotate_alpha, annotate_format,
+                                   horizontal=True)
+
+        # do not show ticks on yaxis
+        self.set_ticks(y_tick_params=dict(length=0, **self._default_tick_params))
+        if tick_labels is None:
+            tick_labels = [str(i) for i in indices]
+        else:
+            assert len(tick_labels) == len(indices)
+
+        tick_position = (num_types - 1) / (2 * num_types)
+        self.set_ticks(yticks=(indices + tick_position), ytick_labels=tick_labels)
         return self
 
     def plot(self,
