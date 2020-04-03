@@ -141,11 +141,14 @@ class Figure(object):
                       bar: list,
                       offset: float,
                       fontsize: int,
+                      weight: str,
                       alpha: float,
                       format: str,
                       horizontal: bool) -> None:
         # annotate self.bar and self.barh
-        shared_kwargs = dict(weight='bold',
+        if weight is None:
+            weight = 'bold'
+        shared_kwargs = dict(weight=weight,
                              fontsize=fontsize,
                              alpha=alpha)
         for b in bar:
@@ -182,6 +185,7 @@ class Figure(object):
             add_annotate: bool = False,
             annotate_offset: float = 0.1,
             annotate_fontsize: Optional[int] = None,
+            annotate_weight: Optional[str] = None,
             annotate_alpha: Optional[float] = None,
             annotate_format: str = '2f',
             err_alpha: Optional[float] = None) -> Figure:
@@ -203,8 +207,8 @@ class Figure(object):
             bars.append(bar)
         if add_annotate:
             for bar in bars:
-                self._annotate_bar(bar, annotate_offset, annotate_fontsize, annotate_alpha, annotate_format,
-                                   horizontal=False)
+                self._annotate_bar(bar, annotate_offset, annotate_fontsize, annotate_weight,
+                                   annotate_alpha, annotate_format, horizontal=False)
 
         # do not show ticks on xaxis
         self.set_ticks(x_tick_params=dict(length=0, **self._default_tick_params))
@@ -227,6 +231,7 @@ class Figure(object):
              add_annotate: bool = False,
              annotate_offset: float = 0.1,
              annotate_fontsize: Optional[int] = None,
+             annotate_weight: Optional[str] = None,
              annotate_alpha: Optional[float] = None,
              annotate_format: str = '2f',
              err_alpha: Optional[float] = None) -> Figure:
@@ -249,8 +254,8 @@ class Figure(object):
             bars.append(bar)
         if add_annotate:
             for bar in bars:
-                self._annotate_bar(bar, annotate_offset, annotate_fontsize, annotate_alpha, annotate_format,
-                                   horizontal=True)
+                self._annotate_bar(bar, annotate_offset, annotate_fontsize, annotate_weight,
+                                   annotate_alpha, annotate_format, horizontal=True)
 
         # do not show ticks on yaxis
         self.set_ticks(y_tick_params=dict(length=0, **self._default_tick_params))
@@ -373,8 +378,11 @@ class Figure(object):
             self.ax.set_ylim(*ylim)
         return self
 
-    def add_grid(self) -> Figure:
-        self.ax.grid()
+    def add_grid(self,
+                 which: str = 'major',
+                 axis: str = 'both',
+                 **grid_properties) -> Figure:
+        self.ax.grid(which=which, axis=axis, **grid_properties)
         return self
 
     def legend(self,
