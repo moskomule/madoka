@@ -69,13 +69,13 @@ class Figure(object):
 
     def save(self,
              path: str,
-             dpi: int,
+             dpi: Optional[int] = None,
              no_tight_layout: bool = False) -> None:
         """ Save figure to `path` with given `dpi`
         """
 
         if not no_tight_layout:
-            self.fig.tight_layout()
+            self.tight_layout()
         self.fig.savefig(path, dpi=dpi)
 
     def show(self):
@@ -91,6 +91,10 @@ class Figure(object):
                       loc: Optional[str] = None,
                       fontsize: Optional[int] = None) -> Figure:
         self.fig.legend(loc=loc, fontsize=fontsize)
+        return self
+
+    def tight_layout(self) -> Figure:
+        self.fig.tight_layout()
         return self
 
     # APIs for each box (ax)
