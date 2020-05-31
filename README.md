@@ -29,4 +29,11 @@ fig.fig # matplotlib's Figure object
 fig.ax # matplotlib's Axes object
 ```
 
+Currently, `madoka` supports the following plots:
+
+* Bar plot (horizontal/vertical)
+* Line plot (with error range if necessary)
+* Scatter plot
+* Stack plot
+
 `madoka`'s functionality is based on what I've needed for papers. But, if you have any suggestions, don't hesitate to make issues or PRs!

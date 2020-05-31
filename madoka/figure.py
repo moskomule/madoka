@@ -33,6 +33,19 @@ def _is_display_available():
     return os.getenv('DISPLAY') is not None
 
 
+def _unwrap_data(_data):
+    if len(_data) == 1:
+        y = _to_numpy(_data[0])
+        x = np.arange(y.shape[-1])
+    elif len(_data) == 2:
+        x, y = _data
+        x, y = _to_numpy(x), _to_numpy(y)
+        assert x.shape[0] == y.shape[0]
+    else:
+        raise ValueError('Too many data to unpack. `_data` expects `y` or `x, y`')
+    return x, y
+
+
 class Figure(object):
     _default_tick_params = dict(direction="in",
                                 grid_alpha=0.5,
@@ -54,6 +67,7 @@ class Figure(object):
         self._boxes = (1, 1) if boxes is None else boxes
         self._num_boxes = np.prod(self._boxes)
         self._ax: Optional[plt.Axes] = None
+        self._bbox_extra_artists = []
 
         # initialize
         self.next()
@@ -70,15 +84,17 @@ class Figure(object):
     def save(self,
              path: str,
              dpi: Optional[int] = None,
-             no_tight_layout: bool = False) -> None:
+             no_tight_layout: bool = False,
+             **kwargs) -> None:
         """ Save figure to `path` with given `dpi`
         """
 
         if not no_tight_layout:
             self.tight_layout()
-        self.fig.savefig(path, dpi=dpi)
+        bbox_extra_artists = None if len(self._bbox_extra_artists) == 0 else self._bbox_extra_artists
+        self.fig.savefig(path, dpi=dpi, bbox_extra_artists=bbox_extra_artists, **kwargs)
 
-    def show(self):
+    def show(self) -> Optional[plt.Figure]:
         if _is_notebook():
             return self.fig
 
@@ -89,8 +105,10 @@ class Figure(object):
 
     def global_legend(self,
                       loc: Optional[str] = None,
-                      fontsize: Optional[int] = None) -> Figure:
-        self.fig.legend(loc=loc, fontsize=fontsize)
+                      fontsize: Optional[int] = None,
+                      **kwargs) -> Figure:
+        leg = self.fig.legend(loc=loc, fontsize=fontsize, **kwargs)
+        self._bbox_extra_artists.append(leg)
         return self
 
     def tight_layout(self) -> Figure:
@@ -160,6 +178,7 @@ class Figure(object):
             width = b.get_width()
             if horizontal:
                 w = self.ax.get_xlim()[1]
+                # check if margin is too small or not
                 _c = (w - width) / w < 0.1
                 _offset = -offset if _c else offset
                 _align = 'right' if _c else 'left'
@@ -281,16 +300,10 @@ class Figure(object):
              linestyle: Optional[str] = None,
              linewidth: Optional[float] = None,
              **kwargs) -> Figure:
-        if len(_data) == 1:
-            y = _to_numpy(_data[0])
-            x = np.arange(y.shape[-1])
-        elif len(_data) == 2:
-            x, y = _data
-            x, y = _to_numpy(x), _to_numpy(y)
-            assert x.shape == y.shape
-        else:
-            raise ValueError('Too many data to unpack. `_data` expects `y` or `x, y`')
+        """ Plot a line (with error range)
+        """
 
+        x, y = _unwrap_data(_data)
         std = None
         if y.ndim == 2:
             std = y.std(axis=0)
@@ -309,6 +322,9 @@ class Figure(object):
                 alpha: Optional[float] = None,
                 label: Optional[str] = None,
                 **kwargs) -> Figure:
+        """ Scatter plot
+        """
+
         x = _to_numpy(x)
         y = _to_numpy(y)
         assert x.shape == y.shape
@@ -316,6 +332,24 @@ class Figure(object):
         if size is not None:
             assert x.shape == size.shape
         self.ax.scatter(x, y, s=size, c=color, alpha=alpha, label=label, **kwargs)
+        return self
+
+    def stack_plot(self,
+                   *_data,
+                   color: Optional[str] = None,
+                   colors: Optional[List] = None,
+                   alpha: Optional[float] = None,
+                   labels: Optional[List[str]] = None) -> Figure:
+        """ Stack plot
+        """
+
+        x, y = _unwrap_data(_data)
+        if color is not None:
+            if colors is not None:
+                raise RuntimeWarning('Both `color` and `colors` are specified, so `colors` is used')
+            else:
+                colors = [plt.get_cmap(color)(i) for i in range(x.shape[0])]
+        self.ax.stackplot(x, y, colors=colors, alpha=alpha, labels=labels)
         return self
 
     def set_labels(self,
@@ -330,7 +364,7 @@ class Figure(object):
         if xlabel is not None:
             self.ax.set_xlabel(xlabel, fontsize=fontsize)
         if ylabel is not None:
-            self.ax.set_xlabel(ylabel, fontsize=fontsize)
+            self.ax.set_ylabel(ylabel, fontsize=fontsize)
         return self
 
     def set_ticks(self,
@@ -393,6 +427,7 @@ class Figure(object):
                loc: Optional[int] = None,
                fontsize: Optional[int] = None,
                title: Optional[str] = None,
-               title_fontsize: Optional[int] = None) -> Figure:
-        self.ax.legend(loc=loc, fontsize=fontsize, title=title, title_fontsize=title_fontsize)
+               title_fontsize: Optional[int] = None,
+               **kwargs) -> Figure:
+        self.ax.legend(loc=loc, fontsize=fontsize, title=title, title_fontsize=title_fontsize, **kwargs)
         return self
